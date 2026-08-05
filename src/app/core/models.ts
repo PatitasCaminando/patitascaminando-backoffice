@@ -1,0 +1,12 @@
+export type AnimalStatus = 'disponible' | 'en_proceso' | 'adoptado' | 'no_disponible' | 'archivado';
+export interface Animal { id:string; name:string; species:string; sex:string; size:string; approximateAge:string; status:AnimalStatus; description:string; generalCondition:string; photoPaths:string[]; isActive:boolean; isPubliclyVisible:boolean; createdAt:string; updatedAt:string; }
+export type AdoptionStatus = 'recibida'|'contactada'|'cita_programada'|'aprobada'|'rechazada'|'cancelada';
+export interface AdoptionApplication { id:string; firstNames:string; lastNames:string; phone:string; email:string; desiredAnimalDescription:string; adoptionReason:string; specificAnimalId:string|null; additionalMessage:string|null; dataProcessingAccepted:boolean; status:AdoptionStatus; internalObservations:string|null; submittedAt:string; updatedAt:string; }
+export type DonationStatus = 'ofrecida'|'contactada'|'entrega_coordinada'|'recibida'|'no_aceptada'|'cancelada';
+export interface DonationOffer { id:string; firstNames:string; lastNames:string; phone:string; email:string; selectedItems:string[]; approximateQuantity:string|null; productName:string|null; itemCondition:string|null; expirationDate:string|null; deliveryAvailability:string|null; otherDescription:string|null; descriptionObservation:string; status:DonationStatus; internalObservations:string|null; submittedAt:string; updatedAt:string; }
+export interface SiteSection { id:string; sectionKey:'rescatistas'|'bienestar_animal'|'contacto'|'redes_sociales'; title:string|null; content:Record<string,unknown>; isPublished:boolean; displayOrder:number; createdAt:string; updatedAt:string; }
+export interface Notification { id:string; formType:'adopcion'|'donacion'; personName:string; title:string; message:string; isRead:boolean; readAt:string|null; emailStatus:'pendiente'|'enviado'|'fallido'; createdAt:string; }
+export interface Permission { key:string; module:string; description:string; }
+export interface Role { key:string; name:string; description:string|null; isInternal:boolean; }
+export interface CurrentUser { id:string; email:string|null; profile:{firstNames:string|null;lastNames:string|null;phone:string|null}|null; roles:Role[]; permissions:Permission[]; }
+export interface AuthSession { accessToken:string; refreshToken:string; tokenType:string; expiresIn:number; expiresAt:number|null; user:{id:string;email:string|null}; }

@@ -1,0 +1,3 @@
+import { Pipe, PipeTransform } from '@angular/core';
+@Pipe({name:'statusLabel',standalone:true})
+export class StatusPipe implements PipeTransform{transform(v:string|null|undefined){const labels:Record<string,string>={disponible:'Disponible',en_proceso:'En proceso',adoptado:'Adoptado',no_disponible:'No disponible',archivado:'Archivado',recibida:'Recibida',contactada:'Contactada',cita_programada:'Cita programada',aprobada:'Aprobada',rechazada:'Rechazada',cancelada:'Cancelada',ofrecida:'Ofrecida',entrega_coordinada:'Entrega coordinada',no_aceptada:'No aceptada',pendiente:'Pendiente',enviado:'Enviado',fallido:'Fallido'};return v?labels[v]??v:'';}}
