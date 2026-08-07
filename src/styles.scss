@@ -610,3 +610,28 @@
   .admin-main .admin-header .user-panel{gap:8px}
   .admin-main .admin-header .logout-button{padding:8px 12px}
 }
+/* ==========================================================
+   Colores de estado — adopciones y donaciones
+   Usa la paleta de marca (--pc-*). Va al FINAL del archivo.
+   ========================================================== */
+
+/* Estados iniciales / en espera → naranja de marca */
+.status[data-status=recibida],
+.status[data-status=ofrecida]{background:rgba(246,146,34,.16);color:#B86408}
+
+/* En gestión → turquesa de marca */
+.status[data-status=contactada]{background:rgba(98,217,217,.24);color:#087F7A}
+
+/* Coordinando / agendado → azul de marca */
+.status[data-status=cita_programada],
+.status[data-status=entrega_coordinada]{background:rgba(21,57,112,.12);color:var(--pc-blue)}
+
+/* Cierre exitoso → morado de marca */
+.status[data-status=aprobada]{background:rgba(97,39,88,.16);color:var(--pc-purple)}
+
+/* Cierre negativo → rojo suave */
+.status[data-status=rechazada],
+.status[data-status=no_aceptada]{background:#FDEAEA;color:#A21C1C}
+
+/* Descartado → gris neutro */
+.status[data-status=cancelada]{background:#EEF2F6;color:var(--pc-muted)}

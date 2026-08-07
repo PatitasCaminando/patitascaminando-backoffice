@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AdoptionApplication, AdoptionStatus, Animal, AuthSession, CurrentUser, DonationOffer, DonationStatus, Notification, SiteSection } from './models';
 
@@ -34,13 +34,12 @@ export class ApiService {
   publicSections():Observable<SiteSection[]>{ return this.http.get<SiteSection[]>(`${this.base}/public/site-sections`); }
   createAdoption(body:Record<string,unknown>){ return this.http.post<AdoptionApplication>(`${this.base}/public/adoptions/applications`,body); }
   createDonation(body:Record<string,unknown>){ return this.http.post<DonationOffer>(`${this.base}/public/donations/offers`,body); }
-  adminAnimals():Observable<Animal[]>{ return this.demoMode?of(this.demoAnimals):this.http.get<Animal[]>(`${this.base}/admin/animals`); }
-  createAnimal(body:Partial<Animal>){ return this.demoMode?of({...this.demoAnimals[0],...body,id:`demo-animal-${Date.now()}`,createdAt:this.now,updatedAt:this.now} as Animal):this.http.post<Animal>(`${this.base}/admin/animals`,body); }
+  adminAnimals():Observable<Animal[]>{ return this.demoMode?of(this.demoAnimals):this.http.get<{items:Animal[]}>(`${this.base}/admin/animals?page=1&limit=100`).pipe(map(r=>r.items??[])); }  createAnimal(body:Partial<Animal>){ return this.demoMode?of({...this.demoAnimals[0],...body,id:`demo-animal-${Date.now()}`,createdAt:this.now,updatedAt:this.now} as Animal):this.http.post<Animal>(`${this.base}/admin/animals`,body); }
   updateAnimal(id:string,body:Partial<Animal>){ return this.demoMode?of({...this.demoAnimals[0],...body,id,updatedAt:this.now} as Animal):this.http.patch<Animal>(`${this.base}/admin/animals/${id}`,body); }
   deleteAnimal(id:string){ return this.demoMode?of(void 0):this.http.delete<void>(`${this.base}/admin/animals/${id}`); }
-  adoptions():Observable<AdoptionApplication[]>{ return this.demoMode?of(this.demoAdoptions):this.http.get<AdoptionApplication[]>(`${this.base}/admin/adoptions/applications`); }
+  adoptions():Observable<AdoptionApplication[]>{ return this.demoMode?of(this.demoAdoptions):this.http.get<{items:AdoptionApplication[]}>(`${this.base}/admin/adoptions/applications`).pipe(map(r=>r.items??[])); }
   updateAdoptionStatus(id:string,status:AdoptionStatus,internalObservations?:string){ return this.demoMode?of({...this.demoAdoptions[0],id,status,internalObservations:internalObservations??null,updatedAt:this.now}):this.http.patch<AdoptionApplication>(`${this.base}/admin/adoptions/applications/${id}/status`,{status,internalObservations}); }
-  donations():Observable<DonationOffer[]>{ return this.demoMode?of(this.demoDonations):this.http.get<DonationOffer[]>(`${this.base}/admin/donations/offers`); }
+  donations():Observable<DonationOffer[]>{ return this.demoMode?of(this.demoDonations):this.http.get<{items:DonationOffer[]}>(`${this.base}/admin/donations/offers`).pipe(map(r=>r.items??[])); }
   updateDonationStatus(id:string,status:DonationStatus,internalObservations?:string){ return this.demoMode?of({...this.demoDonations[0],id,status,internalObservations:internalObservations??null,updatedAt:this.now}):this.http.patch<DonationOffer>(`${this.base}/admin/donations/offers/${id}/status`,{status,internalObservations}); }
   notifications():Observable<Notification[]>{ return this.demoMode?of(this.demoNotifications):this.http.get<Notification[]>(`${this.base}/admin/notifications`); }
   markNotificationRead(id:string){ return this.demoMode?of({...this.demoNotifications[0],id,isRead:true,readAt:this.now}):this.http.patch<Notification>(`${this.base}/admin/notifications/${id}/read`,{}); }
