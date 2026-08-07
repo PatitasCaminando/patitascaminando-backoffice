@@ -11,7 +11,7 @@ import { AuthService } from '../core/auth.service';
   imports: [RouterLink, RouterLinkActive, RouterOutlet, NgIf, ReactiveFormsModule],
   template: `
     <div class="admin-shell">
-      <aside [class.open]="menu()">
+      <aside [class.open]="menu()" (click)="closeDrawer()">
         <a routerLink="/admin" class="admin-logo">
           <img src="assets/branding/logo-color-transparent.png" alt="Patitas Caminando">
         </a>
@@ -42,7 +42,7 @@ import { AuthService } from '../core/auth.service';
 
       <section class="admin-main">
         <header class="admin-header">
-          <button class="menu-btn" (click)="menu.set(!menu())" aria-label="Abrir menu">
+          <button class="menu-btn" (click)="toggleMenu($event)" aria-label="Abrir menu">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
           </button>
           <a routerLink="/admin/notificaciones" class="notification-trigger" aria-label="Ver notificaciones" (click)="closeMenus()">
@@ -132,6 +132,14 @@ export class AdminLayoutComponent implements OnInit {
   @HostListener('document:click')
   closeMenus() {
     this.profileOpen.set(false);
+  }
+  toggleMenu(event: Event) {
+    event.stopPropagation();
+    this.menu.set(!this.menu());
+  }
+
+  closeDrawer() {
+    this.menu.set(false);
   }
 
   openUpdateProfile(event: Event) {

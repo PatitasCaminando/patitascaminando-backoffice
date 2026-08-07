@@ -635,3 +635,28 @@
 
 /* Descartado → gris neutro */
 .status[data-status=cancelada]{background:#EEF2F6;color:var(--pc-muted)}
+
+/* ==========================================================
+   Fix responsive backoffice — drawer lateral
+   Debe ir al FINAL del archivo para ganar en el cascade.
+   ========================================================== */
+@media(max-width:900px){
+  .admin-shell{grid-template-columns:minmax(0,1fr)}
+  .admin-shell aside{
+    position:fixed;
+    top:0;
+    left:-290px;
+    height:100vh;
+    width:270px;
+    z-index:60;
+    overflow-y:auto;
+    background:#ffffff;
+    box-shadow:0 0 40px rgba(21,57,112,.28);
+    transition:left .22s ease;
+  }
+  .admin-shell aside.open{left:0}
+  .admin-main .admin-header{z-index:10}
+  .admin-main .menu-btn,
+  .admin-main header .menu-btn,
+  .admin-main .admin-header .menu-btn{display:inline-flex}
+}
