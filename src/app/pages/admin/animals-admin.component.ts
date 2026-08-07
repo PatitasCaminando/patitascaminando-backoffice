@@ -65,6 +65,14 @@ import { StatusPipe } from '../../shared/status.pipe';
       </table>
     </div>
 
+    @if(totalPages() > 1) {
+      <div class="pager">
+        <button class="icon-btn" [disabled]="page() === 1" (click)="goTo(page() - 1)">Anterior</button>
+        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} · {{total()}} animales</span>
+        <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)">Siguiente</button>
+      </div>
+    }
+
     @if(show()) {
       <div class="modal-backdrop">
         <div class="modal wide">
@@ -73,9 +81,9 @@ import { StatusPipe } from '../../shared/status.pipe';
           <form [formGroup]="form" (ngSubmit)="save()">
             <div class="form-grid">
               <label>Nombre<input class="form-control" formControlName="name"></label>
-              <label>Especie<select class="form-control" formControlName="species"><option>Perro</option><option>Gato</option><option>Otro</option></select></label>
-              <label>Sexo<select class="form-control" formControlName="sex"><option>Macho</option><option>Hembra</option></select></label>
-              <label>Tamano<select class="form-control" formControlName="size"><option>Pequeno</option><option>Mediano</option><option>Grande</option></select></label>
+              <label>Especie<select class="form-control" formControlName="species"><option value="perro">Perro</option><option value="gato">Gato</option><option value="otro">Otro</option></select></label>
+              <label>Sexo<select class="form-control" formControlName="sex"><option value="macho">Macho</option><option value="hembra">Hembra</option></select></label>
+              <label>Tamano<select class="form-control" formControlName="size"><option value="pequeño">Pequeno</option><option value="mediano">Mediano</option><option value="grande">Grande</option><option value="no_especificado">No especificado</option></select></label>
               <label>Edad aproximada<select class="form-control" formControlName="approximateAge"><option value="0 a 6 meses">0 a 6 meses</option><option value="7 a 12 meses">7 a 12 meses</option><option value="1 a 3 años">1 a 3 años</option><option value="4 a 7 años">4 a 7 años</option><option value="8 años o más">8 años o más</option></select></label>
               <label>Estado<select class="form-control" formControlName="status"><option value="disponible">Disponible</option><option value="en_proceso">En proceso</option><option value="adoptado">Adoptado</option><option value="no_disponible">No disponible</option><option value="archivado">Archivado</option></select></label>
             </div>
@@ -96,6 +104,10 @@ import { StatusPipe } from '../../shared/status.pipe';
 })
 export class AnimalsAdminComponent implements OnInit {
   animals = signal<Animal[]>([]);
+  page = signal(1);
+  totalPages = signal(1);
+  total = signal(0);
+  readonly pageSize = 10;
   show = signal(false);
   editing = signal<Animal|null>(null);
   saving = signal(false);
@@ -103,9 +115,9 @@ export class AnimalsAdminComponent implements OnInit {
   photoPaths = signal<string[]>([]);
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
-    species: ['Perro', Validators.required],
-    sex: ['Macho', Validators.required],
-    size: ['Mediano', Validators.required],
+    species: ['perro', Validators.required],
+    sex: ['macho', Validators.required],
+    size: ['mediano', Validators.required],
     approximateAge: ['1 a 3 años', Validators.required],
     status: ['disponible' as Animal['status'], Validators.required],
     description: ['', Validators.required],
@@ -117,9 +129,26 @@ export class AnimalsAdminComponent implements OnInit {
   constructor(private fb: FormBuilder, private api: ApiService, public images: ImageService) {}
 
   ngOnInit() { this.load(); }
-  load() { this.api.adminAnimals().subscribe(v => this.animals.set(v)); }
-  openNew() { this.editing.set(null); this.photoPaths.set([]); this.form.reset({species:'Perro', sex:'Macho', size:'Mediano', approximateAge:'1 a 3 años', status:'disponible', isActive:true, isPubliclyVisible:true} as never); this.show.set(true); }
-  edit(a: Animal) { this.editing.set(a); this.photoPaths.set(a.photoPaths || []); this.form.patchValue(a); this.show.set(true); } 
-  async upload(ev: Event) { const file = (ev.target as HTMLInputElement).files?.[0]; if (!file) return; this.uploading.set(true); try { const p = await this.images.upload(file); this.photoPaths.update(v => [p, ...v]); } catch(e) { alert(e instanceof Error ? e.message : 'No se pudo subir la imagen'); } finally { this.uploading.set(false); } }  save() { if (this.form.invalid) return; if (!this.photoPaths().length) { alert('Debes seleccionar al menos una imagen.'); return; } this.saving.set(true); const body = {...this.form.getRawValue(), photoPaths:this.photoPaths()}; const req = this.editing() ? this.api.updateAnimal(this.editing()!.id, body) : this.api.createAnimal(body); req.subscribe({next: () => { this.saving.set(false); this.show.set(false); this.load(); }, error: e => { this.saving.set(false); alert(e?.error?.message ?? 'No se pudo guardar'); }}); }
+
+  load() {
+    this.api.adminAnimalsPage(this.page(), this.pageSize).subscribe(r => {
+      const items = r.items ?? [];
+      this.total.set(r.total ?? items.length);
+      this.totalPages.set(r.totalPages ?? 1);
+      if (!items.length && this.page() > 1) { this.page.set(this.page() - 1); this.load(); return; }
+      this.animals.set(items);
+    });
+  }
+
+  goTo(p: number) {
+    if (p < 1 || p > this.totalPages() || p === this.page()) return;
+    this.page.set(p);
+    this.load();
+  }
+
+  openNew() { this.editing.set(null); this.photoPaths.set([]); this.form.reset({species:'perro', sex:'macho', size:'mediano', approximateAge:'1 a 3 años', status:'disponible', isActive:true, isPubliclyVisible:true} as never); this.show.set(true); }
+  edit(a: Animal) { this.editing.set(a); this.photoPaths.set(a.photoPaths || []); this.form.patchValue(a); this.show.set(true); }
+  async upload(ev: Event) { const file = (ev.target as HTMLInputElement).files?.[0]; if (!file) return; this.uploading.set(true); try { const p = await this.images.upload(file); this.photoPaths.update(v => [p, ...v]); } catch(e) { alert(e instanceof Error ? e.message : 'No se pudo subir la imagen'); } finally { this.uploading.set(false); } }
+  save() { if (this.form.invalid) return; if (!this.photoPaths().length) { alert('Debes seleccionar al menos una imagen.'); return; } this.saving.set(true); const body = {...this.form.getRawValue(), photoPaths:this.photoPaths()}; const req = this.editing() ? this.api.updateAnimal(this.editing()!.id, body) : this.api.createAnimal(body); req.subscribe({next: () => { this.saving.set(false); this.show.set(false); this.load(); }, error: e => { this.saving.set(false); alert(e?.error?.message ?? 'No se pudo guardar'); }}); }
   remove(a: Animal) { if (confirm(`Eliminar a ${a.name}?`)) this.api.deleteAnimal(a.id).subscribe(() => this.load()); }
 }

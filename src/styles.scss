@@ -660,3 +660,22 @@
   .admin-main header .menu-btn,
   .admin-main .admin-header .menu-btn{display:inline-flex}
 }
+
+/* Controles de paginacion */
+.pager{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin:20px 0 8px;
+  flex-wrap:wrap;
+}
+.pager-info{
+  color:var(--pc-muted);
+  font-size:13px;
+  font-weight:600;
+}
+.pager .icon-btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
