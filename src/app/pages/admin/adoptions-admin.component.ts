@@ -56,10 +56,18 @@ import { StatusPipe } from '../../shared/status.pipe';
       </table>
     </div>
 
+    @if(totalPages() > 1) {
+      <div class="pager">
+        <button class="icon-btn" [disabled]="page() === 1" (click)="goTo(page() - 1)">Anterior</button>
+        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} &middot; {{total()}} solicitudes</span>
+        <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)">Siguiente</button>
+      </div>
+    }
+
     @if(selected()) {
       <div class="modal-backdrop">
         <div class="modal">
-          <button class="modal-close" (click)="selected.set(null)">×</button>
+          <button class="modal-close" (click)="selected.set(null)">&times;</button>
           <h2>Gestionar solicitud</h2>
           <p><strong>{{selected()!.firstNames}} {{selected()!.lastNames}}</strong></p>
           <label>
@@ -87,6 +95,10 @@ export class AdoptionsAdminComponent implements OnInit {
   rows = signal<AdoptionApplication[]>([]);
   animals = signal<Animal[]>([]);
   selected = signal<AdoptionApplication | null>(null);
+  page = signal(1);
+  totalPages = signal(1);
+  total = signal(0);
+  readonly pageSize = 10;
   status: AdoptionStatus = 'recibida';
   observations = '';
 
@@ -98,7 +110,19 @@ export class AdoptionsAdminComponent implements OnInit {
   }
 
   load() {
-    this.api.adoptions().subscribe(v => this.rows.set(v));
+    this.api.adoptionsPage(this.page(), this.pageSize).subscribe(r => {
+      const items = r.items ?? [];
+      this.total.set(r.total ?? items.length);
+      this.totalPages.set(r.totalPages ?? 1);
+      if (!items.length && this.page() > 1) { this.page.set(this.page() - 1); this.load(); return; }
+      this.rows.set(items);
+    });
+  }
+
+  goTo(p: number) {
+    if (p < 1 || p > this.totalPages() || p === this.page()) return;
+    this.page.set(p);
+    this.load();
   }
 
   adoptionAnimal(a: AdoptionApplication) {
