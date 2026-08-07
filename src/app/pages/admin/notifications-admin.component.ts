@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { Notification } from '../../core/models';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
+
 @Component({
   selector: 'app-notifications-admin',
   standalone: true,
@@ -16,7 +17,7 @@ import { EmptyStateComponent } from '../../shared/empty-state.component';
       </div>
     </div>
     <div class="notifications">
-      @for(n of rows(); track n.id) {
+      @for(n of pageRows(); track n.id) {
         <a class="notification" [class.unread]="!n.isRead" href="javascript:void(0)" (click)="open(n)">
           <div class="notification-icon">
             @if(isDonation(n)) {
@@ -38,24 +39,58 @@ import { EmptyStateComponent } from '../../shared/empty-state.component';
         <app-empty-state title="Sin notificaciones" message="Las nuevas adopciones y donaciones apareceran aqui."/>
       }
     </div>
+
+    @if(totalPages() > 1) {
+      <div class="pager">
+        <button class="icon-btn" [disabled]="page() === 1" (click)="goTo(page() - 1)">Anterior</button>
+        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} &middot; {{rows().length}} notificaciones</span>
+        <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)">Siguiente</button>
+      </div>
+    }
   `
 })
 export class NotificationsAdminComponent implements OnInit {
   rows = signal<Notification[]>([]);
+  page = signal(1);
+  readonly pageSize = 10;
+
   constructor(private api: ApiService, private router: Router) {}
+
   ngOnInit() {
     this.load();
   }
+
   load() {
-    this.api.notifications().subscribe(v => this.rows.set(v));
+    // La API devuelve un arreglo plano sin paginar, asi que se pagina aqui.
+    this.api.notifications().subscribe(v => {
+      this.rows.set(v ?? []);
+      if (this.page() > this.totalPages()) this.page.set(this.totalPages());
+    });
   }
+
+  totalPages() {
+    return Math.max(1, Math.ceil(this.rows().length / this.pageSize));
+  }
+
+  pageRows() {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.rows().slice(start, start + this.pageSize);
+  }
+
+  goTo(p: number) {
+    if (p < 1 || p > this.totalPages() || p === this.page()) return;
+    this.page.set(p);
+  }
+
   notificationTarget(notification: Notification) {
     return this.isDonation(notification) ? '/admin/donaciones' : '/admin/adopciones';
   }
+
   isDonation(notification: Notification) {
     const value = `${notification.formType} ${notification.title} ${notification.message}`.toLowerCase();
     return value.includes('donaci') || value.includes('donation');
   }
+
   open(notification: Notification) {
     const target = this.notificationTarget(notification);
     if (notification.isRead) { this.router.navigateByUrl(target); return; }
