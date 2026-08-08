@@ -679,3 +679,51 @@
   opacity:.45;
   cursor:not-allowed;
 }
+/* Pestanas de filtro por estado */
+.status-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:18px;
+}
+.status-tab{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:0 14px;
+  border:1px solid rgba(21,57,112,.10);
+  border-radius:999px;
+  background:#fff;
+  color:var(--pc-blue);
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+}
+.status-tab:hover{
+  background:rgba(98,217,217,.12);
+  transform:translateY(-1px);
+}
+.status-tab.active{
+  background:var(--pc-orange);
+  border-color:var(--pc-orange);
+  color:#fff;
+  box-shadow:0 10px 22px rgba(246,146,34,.22);
+}
+.status-tab-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:22px;
+  height:22px;
+  padding:0 6px;
+  border-radius:999px;
+  background:rgba(21,57,112,.08);
+  font-size:11px;
+  font-weight:800;
+}
+.status-tab.active .status-tab-count{
+  background:rgba(255,255,255,.28);
+  color:#fff;
+}

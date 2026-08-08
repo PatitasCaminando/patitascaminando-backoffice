@@ -6,6 +6,8 @@ import { ImageService } from '../../core/image.service';
 import { AdoptionApplication, AdoptionStatus, Animal } from '../../core/models';
 import { StatusPipe } from '../../shared/status.pipe';
 
+type TabKey = 'todas' | AdoptionStatus;
+
 @Component({
   selector: 'app-adoptions-admin',
   standalone: true,
@@ -16,6 +18,14 @@ import { StatusPipe } from '../../shared/status.pipe';
         <span class="eyebrow">Seguimiento</span>
         <h1>Solicitudes de adopci&oacute;n</h1>
       </div>
+    </div>
+
+    <div class="status-tabs">
+      @for(t of tabs; track t.key) {
+        <button class="status-tab" [class.active]="tab() === t.key" (click)="selectTab(t.key)">
+          {{t.label}} <span class="status-tab-count">{{countFor(t.key)}}</span>
+        </button>
+      }
     </div>
 
     <div class="card table-card adoptions-table">
@@ -30,7 +40,7 @@ import { StatusPipe } from '../../shared/status.pipe';
           </tr>
         </thead>
         <tbody>
-          @for(a of rows(); track a.id) {
+          @for(a of pageRows(); track a.id) {
             <tr>
               <td>
                 <strong>{{a.firstNames}} {{a.lastNames}}</strong><br>
@@ -51,6 +61,8 @@ import { StatusPipe } from '../../shared/status.pipe';
                 <button class="icon-btn" (click)="selected.set(a); status = a.status; observations = a.internalObservations || ''">Gestionar</button>
               </td>
             </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty-table">No hay solicitudes en este estado.</td></tr>
           }
         </tbody>
       </table>
@@ -59,7 +71,7 @@ import { StatusPipe } from '../../shared/status.pipe';
     @if(totalPages() > 1) {
       <div class="pager">
         <button class="icon-btn" [disabled]="page() === 1" (click)="goTo(page() - 1)">Anterior</button>
-        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} &middot; {{total()}} solicitudes</span>
+        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} &middot; {{filtered().length}} solicitudes</span>
         <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)">Siguiente</button>
       </div>
     }
@@ -95,12 +107,21 @@ export class AdoptionsAdminComponent implements OnInit {
   rows = signal<AdoptionApplication[]>([]);
   animals = signal<Animal[]>([]);
   selected = signal<AdoptionApplication | null>(null);
+  tab = signal<TabKey>('todas');
   page = signal(1);
-  totalPages = signal(1);
-  total = signal(0);
   readonly pageSize = 10;
   status: AdoptionStatus = 'recibida';
   observations = '';
+
+  readonly tabs: {key: TabKey; label: string}[] = [
+    {key: 'todas', label: 'Todas'},
+    {key: 'recibida', label: 'Recibidas'},
+    {key: 'contactada', label: 'Contactadas'},
+    {key: 'cita_programada', label: 'Cita programada'},
+    {key: 'aprobada', label: 'Aprobadas'},
+    {key: 'rechazada', label: 'Rechazadas'},
+    {key: 'cancelada', label: 'Canceladas'}
+  ];
 
   constructor(private api: ApiService, public images: ImageService) {}
 
@@ -110,19 +131,41 @@ export class AdoptionsAdminComponent implements OnInit {
   }
 
   load() {
-    this.api.adoptionsPage(this.page(), this.pageSize).subscribe(r => {
-      const items = r.items ?? [];
-      this.total.set(r.total ?? items.length);
-      this.totalPages.set(r.totalPages ?? 1);
-      if (!items.length && this.page() > 1) { this.page.set(this.page() - 1); this.load(); return; }
-      this.rows.set(items);
+    // Se traen todas porque la API no filtra por estado; el filtro y la
+    // paginacion se resuelven aqui para poder mostrar las pestanas.
+    this.api.adoptionsPage(1, 100).subscribe(r => {
+      this.rows.set(r.items ?? []);
+      if (this.page() > this.totalPages()) this.page.set(this.totalPages());
     });
+  }
+
+  countFor(key: TabKey) {
+    return key === 'todas' ? this.rows().length : this.rows().filter(r => r.status === key).length;
+  }
+
+  filtered() {
+    const t = this.tab();
+    return t === 'todas' ? this.rows() : this.rows().filter(r => r.status === t);
+  }
+
+  totalPages() {
+    return Math.max(1, Math.ceil(this.filtered().length / this.pageSize));
+  }
+
+  pageRows() {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  }
+
+  selectTab(key: TabKey) {
+    if (this.tab() === key) return;
+    this.tab.set(key);
+    this.page.set(1);
   }
 
   goTo(p: number) {
     if (p < 1 || p > this.totalPages() || p === this.page()) return;
     this.page.set(p);
-    this.load();
   }
 
   adoptionAnimal(a: AdoptionApplication) {
