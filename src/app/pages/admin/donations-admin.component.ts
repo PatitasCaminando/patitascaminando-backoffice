@@ -5,6 +5,8 @@ import { ApiService } from '../../core/api.service';
 import { DonationOffer, DonationStatus } from '../../core/models';
 import { StatusPipe } from '../../shared/status.pipe';
 
+type TabKey = 'todas' | DonationStatus;
+
 @Component({
   selector: 'app-donations-admin',
   standalone: true,
@@ -15,6 +17,14 @@ import { StatusPipe } from '../../shared/status.pipe';
         <span class="eyebrow">Aportes</span>
         <h1>Ofrecimientos de donaci&oacute;n</h1>
       </div>
+    </div>
+
+    <div class="status-tabs">
+      @for(t of tabs; track t.key) {
+        <button class="status-tab" [class.active]="tab() === t.key" (click)="selectTab(t.key)">
+          {{t.label}} <span class="status-tab-count">{{countFor(t.key)}}</span>
+        </button>
+      }
     </div>
 
     <div class="card table-card">
@@ -29,7 +39,7 @@ import { StatusPipe } from '../../shared/status.pipe';
           </tr>
         </thead>
         <tbody>
-          @for(d of rows(); track d.id) {
+          @for(d of pageRows(); track d.id) {
             <tr>
               <td>
                 <strong>{{d.firstNames}} {{d.lastNames}}</strong><br>
@@ -45,6 +55,8 @@ import { StatusPipe } from '../../shared/status.pipe';
                 <button class="icon-btn" (click)="selected.set(d); status = d.status; observations = d.internalObservations || ''">Gestionar</button>
               </td>
             </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty-table">No hay ofrecimientos en este estado.</td></tr>
           }
         </tbody>
       </table>
@@ -53,7 +65,7 @@ import { StatusPipe } from '../../shared/status.pipe';
     @if(totalPages() > 1) {
       <div class="pager">
         <button class="icon-btn" [disabled]="page() === 1" (click)="goTo(page() - 1)">Anterior</button>
-        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} &middot; {{total()}} ofrecimientos</span>
+        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} &middot; {{filtered().length}} ofrecimientos</span>
         <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)">Siguiente</button>
       </div>
     }
@@ -87,31 +99,62 @@ import { StatusPipe } from '../../shared/status.pipe';
 export class DonationsAdminComponent implements OnInit {
   rows = signal<DonationOffer[]>([]);
   selected = signal<DonationOffer | null>(null);
+  tab = signal<TabKey>('todas');
   page = signal(1);
-  totalPages = signal(1);
-  total = signal(0);
-  readonly pageSize =10;
+  readonly pageSize = 10;
   status: DonationStatus = 'ofrecida';
   observations = '';
+
+  readonly tabs: {key: TabKey; label: string}[] = [
+    {key: 'todas', label: 'Todas'},
+    {key: 'ofrecida', label: 'Ofrecidas'},
+    {key: 'contactada', label: 'Contactadas'},
+    {key: 'entrega_coordinada', label: 'Entrega coordinada'},
+    {key: 'recibida', label: 'Recibidas'},
+    {key: 'no_aceptada', label: 'No aceptadas'},
+    {key: 'cancelada', label: 'Canceladas'}
+  ];
 
   constructor(private api: ApiService) {}
 
   ngOnInit() { this.load(); }
 
   load() {
-    this.api.donationsPage(this.page(), this.pageSize).subscribe(r => {
-      const items = r.items ?? [];
-      this.total.set(r.total ?? items.length);
-      this.totalPages.set(r.totalPages ?? 1);
-      if (!items.length && this.page() > 1) { this.page.set(this.page() - 1); this.load(); return; }
-      this.rows.set(items);
+    // Se traen todas porque la API no filtra por estado; el filtro y la
+    // paginacion se resuelven aqui para poder mostrar las pestanas.
+    this.api.donationsPage(1, 100).subscribe(r => {
+      this.rows.set(r.items ?? []);
+      if (this.page() > this.totalPages()) this.page.set(this.totalPages());
     });
+  }
+
+  countFor(key: TabKey) {
+    return key === 'todas' ? this.rows().length : this.rows().filter(r => r.status === key).length;
+  }
+
+  filtered() {
+    const t = this.tab();
+    return t === 'todas' ? this.rows() : this.rows().filter(r => r.status === t);
+  }
+
+  totalPages() {
+    return Math.max(1, Math.ceil(this.filtered().length / this.pageSize));
+  }
+
+  pageRows() {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  }
+
+  selectTab(key: TabKey) {
+    if (this.tab() === key) return;
+    this.tab.set(key);
+    this.page.set(1);
   }
 
   goTo(p: number) {
     if (p < 1 || p > this.totalPages() || p === this.page()) return;
     this.page.set(p);
-    this.load();
   }
 
   save() {

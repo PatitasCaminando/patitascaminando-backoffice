@@ -5,6 +5,8 @@ import { Animal } from '../../core/models';
 import { ImageService } from '../../core/image.service';
 import { StatusPipe } from '../../shared/status.pipe';
 
+type TabKey = 'todos' | Animal['status'];
+
 @Component({
   selector: 'app-animals-admin',
   standalone: true,
@@ -21,6 +23,14 @@ import { StatusPipe } from '../../shared/status.pipe';
       </button>
     </div>
 
+    <div class="status-tabs">
+      @for(t of tabs; track t.key) {
+        <button class="status-tab" [class.active]="tab() === t.key" (click)="selectTab(t.key)">
+          {{t.label}} <span class="status-tab-count">{{countFor(t.key)}}</span>
+        </button>
+      }
+    </div>
+
     <div class="card table-card animals-table">
       <table>
         <thead>
@@ -33,7 +43,7 @@ import { StatusPipe } from '../../shared/status.pipe';
           </tr>
         </thead>
         <tbody>
-          @for(a of animals(); track a.id) {
+          @for(a of pageRows(); track a.id) {
             <tr>
               <td>
                 <div class="table-person">
@@ -60,6 +70,8 @@ import { StatusPipe } from '../../shared/status.pipe';
                 </div>
               </td>
             </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty-table">No hay animales en este estado.</td></tr>
           }
         </tbody>
       </table>
@@ -68,7 +80,7 @@ import { StatusPipe } from '../../shared/status.pipe';
     @if(totalPages() > 1) {
       <div class="pager">
         <button class="icon-btn" [disabled]="page() === 1" (click)="goTo(page() - 1)">Anterior</button>
-        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} · {{total()}} animales</span>
+        <span class="pager-info">Pagina {{page()}} de {{totalPages()}} &middot; {{filtered().length}} animales</span>
         <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)">Siguiente</button>
       </div>
     }
@@ -104,15 +116,24 @@ import { StatusPipe } from '../../shared/status.pipe';
 })
 export class AnimalsAdminComponent implements OnInit {
   animals = signal<Animal[]>([]);
+  tab = signal<TabKey>('todos');
   page = signal(1);
-  totalPages = signal(1);
-  total = signal(0);
   readonly pageSize = 10;
   show = signal(false);
   editing = signal<Animal|null>(null);
   saving = signal(false);
   uploading = signal(false);
   photoPaths = signal<string[]>([]);
+
+  readonly tabs: {key: TabKey; label: string}[] = [
+    {key: 'todos', label: 'Todos'},
+    {key: 'disponible', label: 'Disponibles'},
+    {key: 'en_proceso', label: 'En proceso'},
+    {key: 'adoptado', label: 'Adoptados'},
+    {key: 'no_disponible', label: 'No disponibles'},
+    {key: 'archivado', label: 'Archivados'}
+  ];
+
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     species: ['perro', Validators.required],
@@ -131,19 +152,41 @@ export class AnimalsAdminComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
-    this.api.adminAnimalsPage(this.page(), this.pageSize).subscribe(r => {
-      const items = r.items ?? [];
-      this.total.set(r.total ?? items.length);
-      this.totalPages.set(r.totalPages ?? 1);
-      if (!items.length && this.page() > 1) { this.page.set(this.page() - 1); this.load(); return; }
-      this.animals.set(items);
+    // Se traen todos porque la API no filtra por estado; el filtro y la
+    // paginacion se resuelven aqui para poder mostrar las pestanas.
+    this.api.adminAnimalsPage(1, 100).subscribe(r => {
+      this.animals.set(r.items ?? []);
+      if (this.page() > this.totalPages()) this.page.set(this.totalPages());
     });
+  }
+
+  countFor(key: TabKey) {
+    return key === 'todos' ? this.animals().length : this.animals().filter(a => a.status === key).length;
+  }
+
+  filtered() {
+    const t = this.tab();
+    return t === 'todos' ? this.animals() : this.animals().filter(a => a.status === t);
+  }
+
+  totalPages() {
+    return Math.max(1, Math.ceil(this.filtered().length / this.pageSize));
+  }
+
+  pageRows() {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  }
+
+  selectTab(key: TabKey) {
+    if (this.tab() === key) return;
+    this.tab.set(key);
+    this.page.set(1);
   }
 
   goTo(p: number) {
     if (p < 1 || p > this.totalPages() || p === this.page()) return;
     this.page.set(p);
-    this.load();
   }
 
   openNew() { this.editing.set(null); this.photoPaths.set([]); this.form.reset({species:'perro', sex:'macho', size:'mediano', approximateAge:'1 a 3 años', status:'disponible', isActive:true, isPubliclyVisible:true} as never); this.show.set(true); }
