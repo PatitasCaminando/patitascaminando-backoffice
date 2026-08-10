@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, map } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AdoptionApplication, AdoptionStatus, Animal, AuthSession, CurrentUser, DonationOffer, DonationStatus, Notification, SiteSection } from './models';
+import { AdoptionApplication, AdoptionStatus, Animal, AuthSession, CurrentUser, DonationOffer, DonationStatus, Notification, Operator, SiteSection } from './models';
 
 @Injectable({providedIn:'root'})
 export class ApiService {
@@ -51,5 +51,8 @@ export class ApiService {
   createSection(body:Partial<SiteSection>){ return this.demoMode?of({...this.demoSections[0],...body,id:`demo-section-${Date.now()}`,createdAt:this.now,updatedAt:this.now} as SiteSection):this.http.post<SiteSection>(`${this.base}/admin/site-sections`,body); }
   updateSection(id:string,body:Partial<SiteSection>){ return this.demoMode?of({...this.demoSections[0],...body,id,updatedAt:this.now} as SiteSection):this.http.patch<SiteSection>(`${this.base}/admin/site-sections/${id}`,body); }
   deleteSection(id:string){ return this.demoMode?of(void 0):this.http.delete<void>(`${this.base}/admin/site-sections/${id}`); }
+  operators():Observable<Operator[]>{ return this.demoMode?of([]):this.http.get<{items?:Operator[]}|Operator[]>(`${this.base}/admin/users/operators`).pipe(map(r=>Array.isArray(r)?r:(r.items??[]))); }
   createOperator(body:{email:string;password:string;firstNames?:string;lastNames?:string;phone?:string}){ return this.demoMode?of({id:`demo-operator-${Date.now()}`,email:body.email}):this.http.post<{id:string;email:string|null}>(`${this.base}/admin/users/operators`,body); }
+  updateOperator(id:string,body:{firstNames?:string;lastNames?:string;phone?:string;receiveFormNotifications?:boolean}){ return this.demoMode?of(void 0):this.http.patch<void>(`${this.base}/admin/users/operators/${id}`,body); }
+  setOperatorStatus(id:string,isActive:boolean){ return this.demoMode?of(void 0):this.http.patch<void>(`${this.base}/admin/users/operators/${id}/status`,{isActive}); }
 }

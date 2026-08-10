@@ -10,3 +10,4 @@ export interface Permission { key:string; module:string; description:string; }
 export interface Role { key:string; name:string; description:string|null; isInternal:boolean; }
 export interface CurrentUser { id:string; email:string|null; profile:{firstNames:string|null;lastNames:string|null;phone:string|null}|null; roles:Role[]; permissions:Permission[]; }
 export interface AuthSession { accessToken:string; refreshToken:string; tokenType:string; expiresIn:number; expiresAt:number|null; user:{id:string;email:string|null}; }
+export interface Operator { id:string; email:string|null; firstNames:string|null; lastNames:string|null; phone:string|null; isActive:boolean; receiveFormNotifications:boolean; }
