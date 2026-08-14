@@ -5,3 +5,5 @@ dist/
 .env.local
 ng-serve.log
 ng-serve.err.log
+
+coverage/
