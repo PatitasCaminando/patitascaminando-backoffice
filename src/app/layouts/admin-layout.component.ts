@@ -61,7 +61,6 @@ import { AuthService } from '../core/auth.service';
             </button>
             <div class="profile-menu" *ngIf="profileOpen()">
               <button type="button" class="profile-menu-button" *ngIf="isOperator" (click)="openUpdateProfile($event)">Actualizar datos</button>
-              <button type="button" class="profile-menu-button" *ngIf="isOperator" (click)="openChangePassword($event)">Cambiar clave</button>
               <button type="button" class="logout-button" (pointerdown)="logout($event)" (click)="logout($event)">Cerrar sesi&oacute;n</button>
             </div>
           </div>
@@ -81,20 +80,6 @@ import { AuthService } from '../core/auth.service';
             </form>
           </div>
         </div>
-        <div class="modal-backdrop" *ngIf="changePasswordOpen()">
-          <div class="modal">
-            <button class="modal-close" (click)="changePasswordOpen.set(false)">x</button>
-            <h2>Cambiar clave</h2>
-            <form [formGroup]="passwordForm" (ngSubmit)="savePassword()">
-              <label>Clave actual<input class="form-control" type="password" formControlName="currentPassword"></label>
-              <label>Nueva clave<input class="form-control" type="password" formControlName="newPassword"></label>
-              <label>Confirmar clave<input class="form-control" type="password" formControlName="confirmPassword"></label>
-              @if(passwordMessage()) { <div class="alert success">{{passwordMessage()}}</div> }
-              @if(passwordError()) { <div class="alert error">{{passwordError()}}</div> }
-              <button class="btn btn-primary btn-block" [disabled]="passwordForm.invalid">Actualizar clave</button>
-            </form>
-          </div>
-        </div>
         <div class="admin-content"><router-outlet/></div>
       </section>
     </div>
@@ -104,22 +89,13 @@ export class AdminLayoutComponent implements OnInit {
   menu = signal(false);
   profileOpen = signal(false);
   updateProfileOpen = signal(false);
-  changePasswordOpen = signal(false);
   profileMessage = signal('');
-  passwordMessage = signal('');
-  passwordError = signal('');
   unreadNotifications = signal(0);
 
   profileForm = this.fb.nonNullable.group({
     firstNames: ['', Validators.required],
     lastNames: ['', Validators.required],
     phone: ['']
-  });
-
-  passwordForm = this.fb.nonNullable.group({
-    currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', Validators.required]
   });
 
   constructor(public auth: AuthService, private api: ApiService, private fb: FormBuilder) {}
@@ -133,6 +109,7 @@ export class AdminLayoutComponent implements OnInit {
   closeMenus() {
     this.profileOpen.set(false);
   }
+
   toggleMenu(event: Event) {
     event.stopPropagation();
     this.menu.set(!this.menu());
@@ -155,36 +132,10 @@ export class AdminLayoutComponent implements OnInit {
     this.updateProfileOpen.set(true);
   }
 
-  openChangePassword(event: Event) {
-    event.stopPropagation();
-    this.passwordMessage.set('');
-    this.passwordError.set('');
-    this.passwordForm.reset({currentPassword: '', newPassword: '', confirmPassword: ''});
-    this.profileOpen.set(false);
-    this.changePasswordOpen.set(true);
-  }
-
   saveProfile() {
     if (this.profileForm.invalid) return;
     this.auth.updateLocalProfile(this.profileForm.getRawValue());
     this.profileMessage.set('Datos actualizados correctamente.');
-  }
-
-  savePassword() {
-    if (this.passwordForm.invalid) return;
-    const value = this.passwordForm.getRawValue();
-    this.passwordMessage.set('');
-    this.passwordError.set('');
-    if (value.newPassword !== value.confirmPassword) {
-      this.passwordError.set('Las claves no coinciden.');
-      return;
-    }
-    if (!this.auth.changeLocalOperatorPassword(value.currentPassword, value.newPassword)) {
-      this.passwordError.set('La clave actual no es correcta.');
-      return;
-    }
-    this.passwordMessage.set('Clave actualizada correctamente. Inicia sesion nuevamente.');
-    setTimeout(() => this.auth.logout(), 700);
   }
 
   loadNotifications() {
