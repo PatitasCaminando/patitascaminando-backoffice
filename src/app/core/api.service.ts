@@ -20,8 +20,7 @@ export class ApiService {
   adminAnimalsPage(page:number,limit:number):Observable<{items:Animal[];page:number;limit:number;total:number;totalPages:number}>{ return this.http.get<{items:Animal[];page:number;limit:number;total:number;totalPages:number}>(`${this.base}/admin/animals?page=${page}&limit=${limit}`); }
   createAnimal(body:Partial<Animal>){ return this.http.post<Animal>(`${this.base}/admin/animals`,body); }
   updateAnimal(id:string,body:Partial<Animal>){ return this.http.patch<Animal>(`${this.base}/admin/animals/${id}`,body); }
-  deleteAnimal(id:string){ return this.http.delete<void>(`${this.base}/admin/animals/${id}`); }
-  adoptions():Observable<AdoptionApplication[]>{ return this.http.get<{items:AdoptionApplication[]}>(`${this.base}/admin/adoptions/applications`).pipe(map(r=>r.items??[])); }
+  deleteAnimal(id:string){ return this.http.delete<void>(`${this.base}/admin/animals/${id}/permanent`); }  adoptions():Observable<AdoptionApplication[]>{ return this.http.get<{items:AdoptionApplication[]}>(`${this.base}/admin/adoptions/applications`).pipe(map(r=>r.items??[])); }
   adoptionsPage(page:number,limit:number):Observable<{items:AdoptionApplication[];page:number;limit:number;total:number;totalPages:number}>{ return this.http.get<{items:AdoptionApplication[];page:number;limit:number;total:number;totalPages:number}>(`${this.base}/admin/adoptions/applications?page=${page}&limit=${limit}`); }
   updateAdoptionStatus(id:string,status:AdoptionStatus,internalObservations?:string){ return this.http.patch<AdoptionApplication>(`${this.base}/admin/adoptions/applications/${id}/status`,{status,internalObservations}); }
   donations():Observable<DonationOffer[]>{ return this.http.get<{items:DonationOffer[]}>(`${this.base}/admin/donations/offers`).pipe(map(r=>r.items??[])); }

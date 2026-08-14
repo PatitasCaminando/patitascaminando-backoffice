@@ -266,6 +266,14 @@ export class AnimalsAdminComponent implements OnInit {
       }
     });
   }
-
-  remove(a: Animal) { if (confirm(`Eliminar a ${a.name}?`)) this.api.deleteAnimal(a.id).subscribe(() => this.load()); }
-}
+  remove(a: Animal) {
+    if (a.status !== 'archivado') {
+      alert('Solo se puede eliminar definitivamente un animal archivado. Cambia su estado a Archivado primero.');
+      return;
+    }
+    if (!confirm(`Eliminar definitivamente a ${a.name}? Esta accion no se puede deshacer.`)) return;
+    this.api.deleteAnimal(a.id).subscribe({
+      next: () => this.load(),
+      error: e => alert(e?.error?.message ?? 'No se pudo eliminar el animal.')
+    });
+  }}
