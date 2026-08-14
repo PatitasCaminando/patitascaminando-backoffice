@@ -1,12 +1,12 @@
 import { Component, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `
     <div class="auth-page">
       <div class="auth-card">
@@ -31,6 +31,7 @@ import { AuthService } from '../../core/auth.service';
             {{loading() ? 'Ingresando...' : 'Iniciar sesion'}}
           </button>
         </form>
+        <a routerLink="/recuperar-clave" class="back">¿Olvidaste tu contraseña?</a>
       </div>
     </div>
   `
