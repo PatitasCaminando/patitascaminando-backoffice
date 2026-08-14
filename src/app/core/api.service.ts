@@ -10,9 +10,9 @@ export class ApiService {
   constructor(private http:HttpClient){}
   private get demoMode(){ return ['local-demo-token','local-demo-operator-token'].includes(localStorage.getItem('pc_access_token') || ''); }
   private readonly now = new Date().toISOString();
-  private readonly demoAnimals:Animal[] = [
-    {id:'demo-animal-1',name:'Luna',species:'Perro',sex:'Hembra',size:'Mediano',approximateAge:'2 anos',status:'disponible',description:'Amigable y lista para adopcion.',generalCondition:'Saludable, vacunada.',photoPaths:['assets/branding/login-background.png'],isActive:true,isPubliclyVisible:true,createdAt:this.now,updatedAt:this.now},
-    {id:'demo-animal-2',name:'Milo',species:'Gato',sex:'Macho',size:'Pequeno',approximateAge:'8 meses',status:'en_proceso',description:'Curioso y tranquilo.',generalCondition:'En seguimiento veterinario.',photoPaths:['assets/branding/login-background.png'],isActive:true,isPubliclyVisible:true,createdAt:this.now,updatedAt:this.now}
+ private readonly demoAnimals:Animal[] = [
+    {id:'demo-animal-1',name:'Luna',species:'Perro',sex:'Hembra',size:'Mediano',approximateAge:'2 anos',status:'disponible',description:'Amigable y lista para adopcion.',generalCondition:'Saludable, vacunada.',photoPaths:['assets/branding/login-background.png'],isActive:true,isPubliclyVisible:true,isSterilized:true,isVaccinated:true,isDewormed:true,createdAt:this.now,updatedAt:this.now},
+    {id:'demo-animal-2',name:'Milo',species:'Gato',sex:'Macho',size:'Pequeno',approximateAge:'8 meses',status:'en_proceso',description:'Curioso y tranquilo.',generalCondition:'En seguimiento veterinario.',photoPaths:['assets/branding/login-background.png'],isActive:true,isPubliclyVisible:true,isSterilized:null,isVaccinated:true,isDewormed:true,createdAt:this.now,updatedAt:this.now}
   ];
   private readonly demoAdoptions:AdoptionApplication[] = [
     {id:'demo-adoption-1',firstNames:'Ana',lastNames:'Perez',phone:'0999999999',email:'ana@example.com',desiredAnimalDescription:'Luna',adoptionReason:'Quiero darle un hogar estable.',specificAnimalId:'demo-animal-1',additionalMessage:null,dataProcessingAccepted:true,status:'recibida',internalObservations:null,submittedAt:this.now,updatedAt:this.now}

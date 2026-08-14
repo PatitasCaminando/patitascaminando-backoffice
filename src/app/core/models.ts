@@ -1,5 +1,5 @@
 export type AnimalStatus = 'disponible' | 'en_proceso' | 'adoptado' | 'no_disponible' | 'archivado';
-export interface Animal { id:string; name:string; species:string; sex:string; size:string; approximateAge:string; status:AnimalStatus; description:string; generalCondition:string; photoPaths:string[]; isActive:boolean; isPubliclyVisible:boolean; createdAt:string; updatedAt:string; }
+export interface Animal { id:string; name:string; species:string; sex:string; size:string; approximateAge:string; status:AnimalStatus; description:string; generalCondition:string; photoPaths:string[]; isActive:boolean; isPubliclyVisible:boolean; isSterilized:boolean|null; isVaccinated:boolean|null; isDewormed:boolean|null; createdAt:string; updatedAt:string; }
 export type AdoptionStatus = 'recibida'|'contactada'|'cita_programada'|'aprobada'|'rechazada'|'cancelada';
 export interface AdoptionApplication { id:string; firstNames:string; lastNames:string; phone:string; email:string; desiredAnimalDescription:string; adoptionReason:string; specificAnimalId:string|null; additionalMessage:string|null; dataProcessingAccepted:boolean; status:AdoptionStatus; internalObservations:string|null; submittedAt:string; updatedAt:string; }
 export type DonationStatus = 'ofrecida'|'contactada'|'entrega_coordinada'|'recibida'|'no_aceptada'|'cancelada';

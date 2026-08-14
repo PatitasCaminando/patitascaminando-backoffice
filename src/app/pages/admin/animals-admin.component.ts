@@ -103,6 +103,29 @@ type TabKey = 'todos' | Animal['status'];
             <label>Condicion general<textarea class="form-control" formControlName="generalCondition"></textarea></label>
             <label>Imagen<input type="file" accept="image/*" (change)="upload($event)"></label>
             @if(uploading()) { <p>Subiendo imagen...</p> }
+            <div class="form-grid">
+              <label>Esterilizado
+                <select class="form-control" formControlName="isSterilized">
+                  <option value="si">Si</option>
+                  <option value="no">No</option>
+                  <option value="na">No especificado</option>
+                </select>
+              </label>
+              <label>Vacunado
+                <select class="form-control" formControlName="isVaccinated">
+                  <option value="si">Si</option>
+                  <option value="no">No</option>
+                  <option value="na">No especificado</option>
+                </select>
+              </label>
+              <label>Desparasitado
+                <select class="form-control" formControlName="isDewormed">
+                  <option value="si">Si</option>
+                  <option value="no">No</option>
+                  <option value="na">No especificado</option>
+                </select>
+              </label>
+            </div>
             <div class="check-grid">
               <label class="check"><input type="checkbox" formControlName="isActive"> Activo</label>
               <label class="check"><input type="checkbox" formControlName="isPubliclyVisible"> Visible publicamente</label>
@@ -144,12 +167,23 @@ export class AnimalsAdminComponent implements OnInit {
     description: ['', Validators.required],
     generalCondition: ['', Validators.required],
     isActive: [true],
-    isPubliclyVisible: [true]
+    isPubliclyVisible: [true],
+    isSterilized: ['na'],
+    isVaccinated: ['na'],
+    isDewormed: ['na']
   });
 
   constructor(private fb: FormBuilder, private api: ApiService, public images: ImageService) {}
 
   ngOnInit() { this.load(); }
+
+  private aBooleano(v: string): boolean | null {
+    return v === 'si' ? true : v === 'no' ? false : null;
+  }
+
+  private aTexto(v: boolean | null | undefined): string {
+    return v === true ? 'si' : v === false ? 'no' : 'na';
+  }
 
   load() {
     // Se traen todos porque la API no filtra por estado; el filtro y la
@@ -189,9 +223,49 @@ export class AnimalsAdminComponent implements OnInit {
     this.page.set(p);
   }
 
-  openNew() { this.editing.set(null); this.photoPaths.set([]); this.form.reset({species:'perro', sex:'macho', size:'mediano', approximateAge:'1 a 3 años', status:'disponible', isActive:true, isPubliclyVisible:true} as never); this.show.set(true); }
-  edit(a: Animal) { this.editing.set(a); this.photoPaths.set(a.photoPaths || []); this.form.patchValue(a); this.show.set(true); }
+  openNew() {
+    this.editing.set(null);
+    this.photoPaths.set([]);
+    this.form.reset({species:'perro', sex:'macho', size:'mediano', approximateAge:'1 a 3 años', status:'disponible', isActive:true, isPubliclyVisible:true, isSterilized:'na', isVaccinated:'na', isDewormed:'na'} as never);
+    this.show.set(true);
+  }
+
+  edit(a: Animal) {
+    this.editing.set(a);
+    this.photoPaths.set(a.photoPaths || []);
+    this.form.patchValue({
+      ...a,
+      isSterilized: this.aTexto(a.isSterilized),
+      isVaccinated: this.aTexto(a.isVaccinated),
+      isDewormed: this.aTexto(a.isDewormed)
+    } as never);
+    this.show.set(true);
+  }
+
   async upload(ev: Event) { const file = (ev.target as HTMLInputElement).files?.[0]; if (!file) return; this.uploading.set(true); try { const p = await this.images.upload(file); this.photoPaths.update(v => [p, ...v]); } catch(e) { alert(e instanceof Error ? e.message : 'No se pudo subir la imagen'); } finally { this.uploading.set(false); } }
-  save() { if (this.form.invalid) return; if (!this.photoPaths().length) { alert('Debes seleccionar al menos una imagen.'); return; } this.saving.set(true); const body = {...this.form.getRawValue(), photoPaths:this.photoPaths()}; const req = this.editing() ? this.api.updateAnimal(this.editing()!.id, body) : this.api.createAnimal(body); req.subscribe({next: () => { this.saving.set(false); this.show.set(false); this.load(); }, error: e => { this.saving.set(false); alert(e?.error?.message ?? 'No se pudo guardar'); }}); }
+
+  save() {
+    if (this.form.invalid) return;
+    if (!this.photoPaths().length) { alert('Debes seleccionar al menos una imagen.'); return; }
+    this.saving.set(true);
+    const raw = this.form.getRawValue();
+    const body = {
+      ...raw,
+      isSterilized: this.aBooleano(raw.isSterilized),
+      isVaccinated: this.aBooleano(raw.isVaccinated),
+      isDewormed: this.aBooleano(raw.isDewormed),
+      photoPaths: this.photoPaths()
+    };
+    const req = this.editing() ? this.api.updateAnimal(this.editing()!.id, body) : this.api.createAnimal(body);
+    req.subscribe({
+      next: () => { this.saving.set(false); this.show.set(false); this.load(); },
+      error: e => {
+        this.saving.set(false);
+        if (e?.status === 409) { alert('Ya existe un animal registrado con estos mismos datos.'); return; }
+        alert(e?.error?.message ?? 'No se pudo guardar');
+      }
+    });
+  }
+
   remove(a: Animal) { if (confirm(`Eliminar a ${a.name}?`)) this.api.deleteAnimal(a.id).subscribe(() => this.load()); }
 }
